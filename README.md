@@ -1,9 +1,5 @@
 # i-rars-api
 
-Requires:
-- api-key: 123456
-- title: MapDB-sim: Performance evalaution on model-based XML to relational database mapping choices
-
 Example:
 ```bash
 curl http://127.0.0.1:5000/api/recommender -d "api-key=123456&title=XMapDB-sim: Performance evalaution on model-based XML to relational database mapping choices"
