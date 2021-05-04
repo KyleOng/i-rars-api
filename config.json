@@ -1,0 +1,6 @@
+{
+    "api-key": "123456",
+    "url": "http://127.0.0.1:7474",
+    "username": "neo4j",
+    "password": "123"
+}
