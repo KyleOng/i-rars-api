@@ -32,7 +32,7 @@ def authentication(func):
         return func(*args, **kwargs)
     return wrapper
 
-class RecommenderApi(Resource):
+class CollaborativeFilteringAPI(Resource):
     @authentication
     def post(self, *args, **kwargs):
         api_args = api_put_args.parse_args()
@@ -43,6 +43,24 @@ class RecommenderApi(Resource):
         <-[:CITES]-(source_cite_bys:Scopus)
         -[:CITES]->(targets:Scopus)
         <-[:CITES]-(target_cite_bys:Scopus)
+        <-[:WRITES]-(a:Author)
+        RETURN a
+        """
+
+        result = graph.run(query, dict(title = title))
+        result = result.data()
+        return result
+
+class ContentBasedFilteringAPI(Resource):
+    @authentication
+    def post(self, *args, **kwargs):
+        api_args = api_put_args.parse_args()
+        title = api_args["title"]
+
+        query = """
+        MATCH (source:Scopus {`dc:title`: $title})
+        -[:CONTAINS]->(:Keyword)
+        <-[:CONTAINS]-(target:Scopus)
         <-[:WRITES]-(a:Author)
         RETURN a
         """
