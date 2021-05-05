@@ -3,11 +3,12 @@ import os
 from flask import Flask
 from flask_restful import Api
 
-from api import RecommenderApi
+from api import RecommenderApi, ArticleApi
 
 app = Flask(__name__)
 api = Api(app)
 api.add_resource(RecommenderApi, "/api/recommender")
+api.add_resource(ArticleApi, "/api/article")
 
 if __name__ == '__main__':
     app.secret_key = os.urandom(24)
