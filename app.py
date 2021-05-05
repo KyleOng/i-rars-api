@@ -3,11 +3,12 @@ import os
 from flask import Flask
 from flask_restful import Api
 
-from api import RecommenderApi, ArticleApi
+from api import CollaborativeFilteringAPI, ContentBasedFilteringAPI, ArticleApi
 
 app = Flask(__name__)
 api = Api(app)
-api.add_resource(RecommenderApi, "/api/recommender")
+api.add_resource(CollaborativeFilteringAPI, "/api/recommender/collaborativefiltering")
+api.add_resource(ContentBasedFilteringAPI, "/api/recommender/contentbasedfiltering")
 api.add_resource(ArticleApi, "/api/article")
 
 if __name__ == '__main__':

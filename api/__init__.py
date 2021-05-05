@@ -1,2 +1,2 @@
-from .recommender import RecommenderApi 
+from .recommender import * 
 from .article import ArticleApi 
