@@ -48,3 +48,20 @@ class ArticleApi(Resource):
         result = result.data()
         return result
 
+class ArticleByAuthorApi(Resource):
+    @authentication
+    def post(self, *args, **kwargs):
+        api_args = api_put_args.parse_args()
+        title = api_args["title"]
+
+        query = """
+        MATCH (source:Scopus )
+        <-[:WRITES]-(a:Author)
+        WHERE a.`surname` = $title OR a.`given-name` = $title
+        RETURN a, source
+        """
+
+        result = graph.run(query, dict(title = title))
+        result = result.data()
+        return result
+
