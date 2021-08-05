@@ -39,11 +39,11 @@ class CollaborativeFilteringAPI(Resource):
         title = api_args["title"]
 
         query = """
-        MATCH (source:Scopus {`dc:title`: $title})
-        <-[:CITES]-(source_cite_bys:Scopus)
-        -[:CITES]->(targets:Scopus)
-        <-[:CITES]-(target_cite_bys:Scopus)
-        <-[:WRITES]-(a:Author)
+        MATCH (source:Article {title: $title})
+        <-[:CITE]-(source_cite_bys:Article)
+        -[:CITE]->(targets:Article)
+        <-[:CITE]-(target_cite_bys:Article)
+        <-[:WRITE]-(a:Author)
         RETURN a
         """
 
@@ -58,10 +58,10 @@ class ContentBasedFilteringAPI(Resource):
         title = api_args["title"]
 
         query = """
-        MATCH (source:Scopus {`dc:title`: $title})
-        -[:CONTAINS]->(:Keyword)
-        <-[:CONTAINS]-(target:Scopus)
-        <-[:WRITES]-(a:Author)
+        MATCH (source:Article {title: $title})
+        -[:CONTAIN]->(:Keyword)
+        <-[:CONTAIN]-(target:Article)
+        <-[:WRITE]-(a:Author)
         RETURN a
         """
 
