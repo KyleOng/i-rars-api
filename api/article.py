@@ -20,6 +20,7 @@ with open("config.json") as f:
 
         graph.run("Match () Return 1 Limit $one", {"one": 1})
     except Exception as e:
+        pass
         raise e
 
 def authentication(func):
@@ -39,9 +40,12 @@ class ArticleApi(Resource):
         title = api_args["title"]
 
         query = """
-        MATCH (source:Scopus {`dc:title`: $title})
-        <-[:WRITES]-(a:Author)
-        RETURN a, source
+        MATCH (source:Article)
+        <-[:WRITE]-(a:Author)
+        WHERE toLower(source.title) CONTAINS toLower($title)
+        WITH source, collect(a) as author
+        OPTIONAL MATCH(source)-[:CONTAIN]->(k:Keyword)
+        RETURN author, source, collect(k.keyword) as keywords
         """
 
         result = graph.run(query, dict(title = title))
@@ -55,13 +59,30 @@ class ArticleByAuthorApi(Resource):
         title = api_args["title"]
 
         query = """
-        MATCH (source:Scopus )
-        <-[:WRITES]-(a:Author)
-        WHERE a.`surname` = $title OR a.`given-name` = $title
-        RETURN a, source
+        MATCH (source:Article )
+        <-[:WRITE]-(a:Author)
+        WHERE  toLower(a.`preferredName_last`) =  toLower($title) OR  toLower(a.`preferredName_first`) =  toLower($title)
+        WITH source
+        MATCH (source)<-[:WRITE]-(authors:Author)
+        RETURN source, collect(authors) as authors
         """
 
         result = graph.run(query, dict(title = title))
         result = result.data()
         return result
 
+class ArticleAuthorApi(Resource):
+    @authentication
+    def post(self, *args, **kwargs):
+        api_args = api_put_args.parse_args()
+        title = api_args["title"]
+
+        query = """
+        MATCH (source:Article {title: $title})
+        <-[:WRITE]-(a:Author)
+        RETURN a
+        """
+
+        result = graph.run(query, dict(title = title))
+        result = result.data()
+        return result

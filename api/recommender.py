@@ -20,6 +20,7 @@ with open("config.json") as f:
 
         graph.run("Match () Return 1 Limit $one", {"one": 1})
     except Exception as e:
+        pass
         raise e
 
 def authentication(func):
@@ -39,12 +40,16 @@ class CollaborativeFilteringAPI(Resource):
         title = api_args["title"]
 
         query = """
-        MATCH (source:Scopus {`dc:title`: $title})
-        <-[:CITES]-(source_cite_bys:Scopus)
-        -[:CITES]->(targets:Scopus)
-        <-[:CITES]-(target_cite_bys:Scopus)
-        <-[:WRITES]-(a:Author)
-        RETURN a
+        MATCH (source:Article {title: $title})
+        <-[:CITE]-(source_cite_bys:Article)
+        -[:CITE]->(target:Article)
+        <-[:CITE]-(target_cite_bys:Article)
+        <-[:WRITE]-(a:Author)
+        WHERE source <> target
+        AND source_cite_bys <> target_cite_bys 
+        AND NOT (a)-[:WRITE]->(source) 
+        RETURN a, COUNT(a) as frequency
+        ORDER BY frequency DESC
         """
 
         result = graph.run(query, dict(title = title))
@@ -58,11 +63,14 @@ class ContentBasedFilteringAPI(Resource):
         title = api_args["title"]
 
         query = """
-        MATCH (source:Scopus {`dc:title`: $title})
-        -[:CONTAINS]->(:Keyword)
-        <-[:CONTAINS]-(target:Scopus)
-        <-[:WRITES]-(a:Author)
-        RETURN a
+        MATCH (source:Article {title: $title})
+        -[:CONTAIN]->(:Keyword)
+        <-[:CONTAIN]-(target:Article)
+        <-[:WRITE]-(a:Author)
+        WHERE source <> targets
+        AND NOT (a)-[:WRITE]->(source)
+        RETURN a, count(a) as frequency
+        ORDER BY frequency DESC
         """
 
         result = graph.run(query, dict(title = title))
