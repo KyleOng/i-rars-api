@@ -86,3 +86,41 @@ class ArticleAuthorApi(Resource):
         result = graph.run(query, dict(title = title))
         result = result.data()
         return result
+
+class ArticleByAuthorIdApi(Resource):
+    @authentication
+    def post(self, *args, **kwargs):
+        api_args = api_put_args.parse_args()
+        title = api_args["title"]
+
+        query = """
+        MATCH (source:Article )
+        <-[:WRITE]-(a:Author)
+        WHERE a.authorId = $title
+        WITH source
+        MATCH (source)<-[:WRITE]-(authors:Author)
+        RETURN source, collect(authors) as authors
+        """
+
+        result = graph.run(query, dict(title = title))
+        result = result.data()
+        return result
+
+class ArticleListApi(Resource):
+    @authentication
+    def post(self, *args, **kwargs):
+        api_args = api_put_args.parse_args()
+        title = api_args["title"]
+
+        query = """
+        MATCH (source:Article)
+        <-[:WRITE]-(a:Author)
+        WHERE toLower(source.title) CONTAINS toLower($title)
+        WITH source, collect(a) as authors
+        OPTIONAL MATCH(source)-[:CONTAIN]->(k:Keyword)
+        RETURN authors, source, collect(k.keyword) as keywords
+        """
+
+        result = graph.run(query, dict(title = title))
+        result = result.data()
+        return result

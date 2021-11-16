@@ -33,47 +33,36 @@ def authentication(func):
         return func(*args, **kwargs)
     return wrapper
 
-class CollaborativeFilteringAPI(Resource):
+class AuthorListApi(Resource):
     @authentication
     def post(self, *args, **kwargs):
         api_args = api_put_args.parse_args()
         title = api_args["title"]
 
         query = """
-        MATCH (source:Article {title: $title})
-        <-[:CITE]-(source_cite_bys:Article)
-        -[:CITE]->(target:Article)
-        <-[:CITE]-(target_cite_bys:Article)
-        <-[:WRITE]-(a:Author)
-        WHERE source <> target
-        AND source_cite_bys <> target_cite_bys 
-        AND NOT (a)-[:WRITE]->(source) 
-        RETURN a, COUNT(a) as frequency
-        ORDER BY frequency DESC
+        MATCH (a:Author)
+        WHERE  toLower(a.`preferredName_last`) =  toLower($title) OR  toLower(a.`preferredName_first`) =  toLower($title)
+        RETURN a
         """
 
         result = graph.run(query, dict(title = title))
         result = result.data()
         return result
 
-class ContentBasedFilteringAPI(Resource):
+class AuthorDetailsApi(Resource):
     @authentication
     def post(self, *args, **kwargs):
         api_args = api_put_args.parse_args()
         title = api_args["title"]
 
         query = """
-        MATCH (source:Article {title: $title})
-        -[:CONTAIN]->(:Keyword)
-        <-[:CONTAIN]-(target:Article)
-        <-[:WRITE]-(a:Author)
-        WHERE source <> target
-        AND NOT (a)-[:WRITE]->(source)
-        RETURN a, count(a) as frequency
-        ORDER BY frequency DESC
+        MATCH (a:Author)
+        WHERE  a.authorId = $title
+        RETURN a
         """
 
         result = graph.run(query, dict(title = title))
         result = result.data()
         return result
+
 
