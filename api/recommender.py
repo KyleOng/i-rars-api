@@ -48,7 +48,9 @@ class CollaborativeFilteringAPI(Resource):
         WHERE source <> target
         AND source_cite_bys <> target_cite_bys 
         AND NOT (a)-[:WRITE]->(source) 
-        RETURN a, COUNT(a) as frequency
+        WITH a, source, count(a) as frequency
+        OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
+        RETURN a, m, frequency
         ORDER BY frequency DESC
         """
 
@@ -69,7 +71,9 @@ class ContentBasedFilteringAPI(Resource):
         <-[:WRITE]-(a:Author)
         WHERE source <> target
         AND NOT (a)-[:WRITE]->(source)
-        RETURN a, count(a) as frequency
+        WITH a, source, count(a) as frequency
+        OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
+        RETURN a, m, frequency
         ORDER BY frequency DESC
         """
 

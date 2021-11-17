@@ -17,6 +17,13 @@ api.add_resource(AuthorListApi, "/api/author/authorlist")
 api.add_resource(AuthorDetailsApi, "/api/author/authorDetails")
 api.add_resource(ArticleListApi, "/api/article/articleList")
 
+api.add_resource(AddQueue, "/api/email/addQueue")
+api.add_resource(QueueList, "/api/email/queueList")
+api.add_resource(MailDetails, "/api/email/mailDetails")
+api.add_resource(HistoryList, "/api/email/historyList")
+
+
+
 if __name__ == '__main__':
     app.secret_key = os.urandom(24)
     #port = int(os.environ.get('PORT', 5000))
