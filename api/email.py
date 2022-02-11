@@ -2,6 +2,8 @@ import functools
 import json
 import os
 import time
+import ciso8601
+from datetime import date
 
 from flask_restful import Resource, reqparse, abort
 from py2neo import Graph
@@ -14,6 +16,8 @@ api_put_args.add_argument("receiverId", type=str, help="receiverId is required."
 api_put_args.add_argument("articleId", type=str, help="articleId is required.", required=False)
 api_put_args.add_argument("senderName", type=str, help="senderName is required.", required=False)
 api_put_args.add_argument("senderMail", type=str, help="senderMail is required.", required=False)
+api_put_args.add_argument("fromDate", type=str, help="fromDate is required.", required=False)
+api_put_args.add_argument("toDate", type=str, help="toDate is required.", required=False)
 
 #get from env (wsgi ini)
 api_key     = os.environ.get('API_KEY', '')
@@ -78,16 +82,28 @@ class AddQueue(Resource):
 class QueueList(Resource):
     @authentication
     def post(self, *args, **kwargs):
-        api_args = api_put_args.parse_args()
-        title = api_args["title"]
+        api_args    = api_put_args.parse_args()
+        title       = api_args["title"]
 
+        today   = date.today()
+        d1      = today.strftime("%Y-%m-%d")
+
+        fromDate    = ( api_args["fromDate"] or d1 )
+        toDate      = ( api_args["toDate"] or d1 )
+
+        ts1 = ciso8601.parse_datetime(fromDate+" 00:00:00")
+        ts2 = ciso8601.parse_datetime(toDate+" 23:59:59")
+
+        fromDate    = time.mktime(ts1.timetuple())
+        toDate      = time.mktime(ts2.timetuple()) 
+        
         query = """
         MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
-        WHERE m.status = "queue"
+        WHERE m.status = "queue" AND  m.addedDatetime >= $fromDate AND m.addedDatetime <= $toDate
         RETURN a,m,source
         """
 
-        result = graph.run(query, dict(title = title))
+        result = graph.run(query, dict(title = title, fromDate = fromDate, toDate = toDate))
         result = result.data()
         return result
 
@@ -129,14 +145,26 @@ class HistoryList(Resource):
     def post(self, *args, **kwargs):
         api_args = api_put_args.parse_args()
         title = api_args["title"]
+        
+        today   = date.today()
+        d1      = today.strftime("%Y-%m-%d")
+
+        fromDate    = ( api_args["fromDate"] or d1 )
+        toDate      = ( api_args["toDate"] or d1 )
+
+        ts1 = ciso8601.parse_datetime(fromDate+" 00:00:00")
+        ts2 = ciso8601.parse_datetime(toDate+" 23:59:59")
+
+        fromDate    = time.mktime(ts1.timetuple())
+        toDate      = time.mktime(ts2.timetuple()) 
 
         query = """
         MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
-        WHERE m.status = "sent"
+        WHERE m.status = "sent" AND  m.mailedDatetime >= $fromDate AND m.mailedDatetime <= $toDate 
         RETURN a,m,source
         """
 
-        result = graph.run(query, dict(title = title))
+        result = graph.run(query, dict(title = title, fromDate = fromDate, toDate = toDate))
         result = result.data()
         return result
 
