@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 
 from flask_restful import Resource, reqparse, abort
 from py2neo import Graph
@@ -9,19 +10,27 @@ api_put_args = reqparse.RequestParser()
 api_put_args.add_argument("api-key", type=str, help="api-key is required.", required=True)
 api_put_args.add_argument("title", type=str, help="title is required.", required=True)
 
-with open("config.json") as f:
-    try:
-        data = json.load(f)
-        api_key = data["api-key"]
-        url = data["url"]
-        username = data["username"]
-        password = data["password"]
-        graph = Graph(url, auth=(username, password))    
+#get from env (wsgi ini)
+api_key     = os.environ.get('API_KEY', '')
+url         = os.environ.get('URL', '')
+username    = os.environ.get('USERNAME', '')
+password    = os.environ.get('PASSWORD', '')
 
-        graph.run("Match () Return 1 Limit $one", {"one": 1})
-    except Exception as e:
-        pass
-        raise e
+# if env not loaded
+if url == '':
+    with open("config.json") as f:
+        try:
+            data        = json.load(f)
+            api_key     = data["api-key"]
+            url         = data["url"]
+            username    = data["username"]
+            password    = data["password"]
+
+        except Exception as e:
+            pass
+            raise e
+            
+graph = Graph(url, auth=(username, password))   
 
 def authentication(func):
     # Future use: Authentication api key from database
@@ -51,7 +60,7 @@ class CollaborativeFilteringAPI(Resource):
         WITH a, source, count(a) as frequency
         OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
         RETURN a, m, frequency
-        ORDER BY frequency DESC
+        ORDER BY frequency DESC LIMIT 300
         """
 
         result = graph.run(query, dict(title = title))
@@ -74,7 +83,7 @@ class ContentBasedFilteringAPI(Resource):
         WITH a, source, count(a) as frequency
         OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
         RETURN a, m, frequency
-        ORDER BY frequency DESC
+        ORDER BY frequency DESC LIMIT 300
         """
 
         result = graph.run(query, dict(title = title))

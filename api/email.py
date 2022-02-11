@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 import time
 
 from flask_restful import Resource, reqparse, abort
@@ -14,19 +15,27 @@ api_put_args.add_argument("articleId", type=str, help="articleId is required.", 
 api_put_args.add_argument("senderName", type=str, help="senderName is required.", required=False)
 api_put_args.add_argument("senderMail", type=str, help="senderMail is required.", required=False)
 
-with open("config.json") as f:
-    try:
-        data = json.load(f)
-        api_key = data["api-key"]
-        url = data["url"]
-        username = data["username"]
-        password = data["password"]
-        graph = Graph(url, auth=(username, password))    
+#get from env (wsgi ini)
+api_key     = os.environ.get('API_KEY', '')
+url         = os.environ.get('URL', '')
+username    = os.environ.get('USERNAME', '')
+password    = os.environ.get('PASSWORD', '')
 
-        graph.run("Match () Return 1 Limit $one", {"one": 1})
-    except Exception as e:
-        pass
-        raise e
+# if env not loaded
+if url == '':
+    with open("config.json") as f:
+        try:
+            data        = json.load(f)
+            api_key     = data["api-key"]
+            url         = data["url"]
+            username    = data["username"]
+            password    = data["password"]
+
+        except Exception as e:
+            pass
+            raise e
+            
+graph = Graph(url, auth=(username, password))   
 
 def authentication(func):
     # Future use: Authentication api key from database
@@ -131,3 +140,22 @@ class HistoryList(Resource):
         result = result.data()
         return result
 
+class UpdateSentStatus(Resource):
+    @authentication
+    def post(self, *args, **kwargs):
+        api_args        = api_put_args.parse_args()
+        title           = api_args["title"]
+        receiverId      = api_args["receiverId"]
+        articleId       = api_args["articleId"]
+        curTime         = time.time()
+
+        query = """
+        MATCH (source:Article {eid: $articleId})-[m:MAIL_TO]->(a:Author {authorId: $receiverId})
+        SET m.status = "sent", 
+        m.mailedDatetime = $curTime
+        RETURN m
+        """
+
+        result = graph.run(query, dict(title = title, receiverId = receiverId, articleId = articleId, curTime = curTime))
+        result = result.data()
+        return result

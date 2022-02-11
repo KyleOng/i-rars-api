@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 
 from flask_restful import Resource, reqparse, abort
 from py2neo import Graph
@@ -9,19 +10,27 @@ api_put_args = reqparse.RequestParser()
 api_put_args.add_argument("api-key", type=str, help="api-key is required.", required=True)
 api_put_args.add_argument("title", type=str, help="title is required.", required=True)
 
-with open("config.json") as f:
-    try:
-        data = json.load(f)
-        api_key = data["api-key"]
-        url = data["url"]
-        username = data["username"]
-        password = data["password"]
-        graph = Graph(url, auth=(username, password))    
+#get from env (wsgi ini)
+api_key     = os.environ.get('API_KEY', '')
+url         = os.environ.get('URL', '')
+username    = os.environ.get('USERNAME', '')
+password    = os.environ.get('PASSWORD', '')
 
-        graph.run("Match () Return 1 Limit $one", {"one": 1})
-    except Exception as e:
-        pass
-        raise e
+# if env not loaded
+if url == '':
+    with open("config.json") as f:
+        try:
+            data        = json.load(f)
+            api_key     = data["api-key"]
+            url         = data["url"]
+            username    = data["username"]
+            password    = data["password"]
+
+        except Exception as e:
+            pass
+            raise e
+            
+graph = Graph(url, auth=(username, password))    
 
 def authentication(func):
     # Future use: Authentication api key from database
@@ -45,7 +54,7 @@ class ArticleApi(Resource):
         WHERE toLower(source.title) CONTAINS toLower($title)
         WITH source, collect(a) as author
         OPTIONAL MATCH(source)-[:CONTAIN]->(k:Keyword)
-        RETURN author, source, collect(k.keyword) as keywords
+        RETURN author, source, collect(k.keyword) as keywords LIMIT 300
         """
 
         result = graph.run(query, dict(title = title))
@@ -64,7 +73,7 @@ class ArticleByAuthorApi(Resource):
         WHERE  toLower(a.`preferredName_last`) =  toLower($title) OR  toLower(a.`preferredName_first`) =  toLower($title)
         WITH source
         MATCH (source)<-[:WRITE]-(authors:Author)
-        RETURN source, collect(authors) as authors
+        RETURN source, collect(authors) as authors LIMIT 300
         """
 
         result = graph.run(query, dict(title = title))
@@ -118,7 +127,7 @@ class ArticleListApi(Resource):
         WHERE toLower(source.title) CONTAINS toLower($title)
         WITH source, collect(a) as authors
         OPTIONAL MATCH(source)-[:CONTAIN]->(k:Keyword)
-        RETURN authors, source, collect(k.keyword) as keywords
+        RETURN authors, source, collect(k.keyword) as keywords LIMIT 300
         """
 
         result = graph.run(query, dict(title = title))

@@ -21,7 +21,7 @@ api.add_resource(AddQueue, "/api/email/addQueue")
 api.add_resource(QueueList, "/api/email/queueList")
 api.add_resource(MailDetails, "/api/email/mailDetails")
 api.add_resource(HistoryList, "/api/email/historyList")
-
+api.add_resource(UpdateSentStatus, "/api/email/updateSentStatus")
 
 
 if __name__ == '__main__':
