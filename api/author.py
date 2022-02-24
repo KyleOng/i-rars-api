@@ -48,13 +48,37 @@ class AuthorListApi(Resource):
         api_args = api_put_args.parse_args()
         title = api_args["title"]
 
+        titleNoSpace = title.replace(" ", "")
+        titleNoDash = title.replace("-", "")
+        titleDashToSpace = title.replace("-", " ")
+
+        titleSplitArray = title.split(" ")
+        titleSplit = titleSplitArray[0]
+        titleSplit = titleSplit.replace("-", "")
+        titleSplitDashToSpace = titleSplit.replace("-", " ")
+
+        # if len(titleSplitArray) > 1:
+        #     titleSplit2 = titleSplitArray[1]
+        #     titleSplit2 = titleSplit2.replace("-", "")
+        #     titleSplitDashToSpace2 = titleSplit2.replace("-", " ")
+        # else :
+        #     titleSplit2 = titleSplit
+        #     titleSplitDashToSpace2 = titleSplitDashToSpace
+
         query = """
         MATCH (a:Author)
-        WHERE  toLower(a.`preferredName_last`) =  toLower($title) OR  toLower(a.`preferredName_first`) =  toLower($title)
+        WHERE  (toLower(a.`preferredName_last`) CONTAINS  toLower($title) OR  toLower(a.`preferredName_first`) =  toLower($title))
+        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleNoSpace) OR  toLower(a.`preferredName_first`) =  toLower($titleNoSpace))
+        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleNoDash) OR  toLower(a.`preferredName_first`) =  toLower($titleNoDash))
+        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleSplit) OR  toLower(a.`preferredName_first`) =  toLower($titleSplit))
+        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleDashToSpace) OR  toLower(a.`preferredName_first`) =  toLower($titleDashToSpace))
+        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleSplitDashToSpace) OR  toLower(a.`preferredName_first`) =  toLower($titleSplitDashToSpace))
+        
         RETURN a
         """
 
-        result = graph.run(query, dict(title = title))
+        result = graph.run(query, dict(title = title, titleNoSpace = titleNoSpace, titleNoDash = titleNoDash,titleDashToSpace = titleDashToSpace, titleSplit = titleSplit, titleSplitDashToSpace = titleSplitDashToSpace))
+        # result = graph.run(query, dict(title = title, titleNoSpace = titleNoSpace, titleNoDash = titleNoDash,titleDashToSpace = titleDashToSpace, titleSplit = titleSplit, titleSplitDashToSpace = titleSplitDashToSpace , titleSplit2 = titleSplit2, titleSplitDashToSpace2 = titleSplitDashToSpace2))
         result = result.data()
         return result
 
