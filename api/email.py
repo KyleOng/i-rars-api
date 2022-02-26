@@ -18,6 +18,9 @@ api_put_args.add_argument("senderName", type=str, help="senderName is required."
 api_put_args.add_argument("senderMail", type=str, help="senderMail is required.", required=False)
 api_put_args.add_argument("fromDate", type=str, help="fromDate is required.", required=False)
 api_put_args.add_argument("toDate", type=str, help="toDate is required.", required=False)
+api_put_args.add_argument("senderUserId", type=str, help="senderUserId is required.", required=False)
+api_put_args.add_argument("sentType", type=str, help="sentType is required.", required=False)
+api_put_args.add_argument("status", type=str, help="status is required.", required=False)
 
 #get from env (wsgi ini)
 api_key     = os.environ.get('API_KEY', '')
@@ -60,6 +63,8 @@ class AddQueue(Resource):
         articleId   = api_args["articleId"]
         senderName  = api_args["senderName"]
         senderMail  = api_args["senderMail"]
+        senderUserId    = api_args["senderUserId"]
+
         curTime = time.time()
 
         query = """
@@ -71,11 +76,12 @@ class AddQueue(Resource):
         m.mailContent = $title,
         m.status = "queue",
         m.addedDatetime = $curTime,
-        m.mailedDatetime = ""
+        m.mailedDatetime = "",
+        m.senderUserId = $senderUserId
         RETURN a
         """
-
-        result = graph.run(query, dict(title = title, receiverId = receiverId, articleId = articleId, senderName = senderName, senderMail = senderMail, curTime = curTime))
+      
+        result = graph.run(query, dict(title = title, receiverId = receiverId, articleId = articleId, senderName = senderName, senderMail = senderMail, curTime = curTime, senderUserId = senderUserId))
         result = result.data()
         return result
 
@@ -84,6 +90,7 @@ class QueueList(Resource):
     def post(self, *args, **kwargs):
         api_args    = api_put_args.parse_args()
         title       = api_args["title"]
+        senderUserId    = api_args["senderUserId"]
 
         today   = date.today()
         d1      = today.strftime("%Y-%m-%d")
@@ -97,29 +104,20 @@ class QueueList(Resource):
         fromDate    = time.mktime(ts1.timetuple())
         toDate      = time.mktime(ts2.timetuple()) 
         
-        query = """
-        MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
-        WHERE m.status = "queue" AND  m.addedDatetime >= $fromDate AND m.addedDatetime <= $toDate
-        RETURN a,m,source
-        """
+        if senderUserId == 'admin':
+            query = """
+            MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
+            WHERE m.status = "queue" AND  m.addedDatetime >= $fromDate AND m.addedDatetime <= $toDate
+            RETURN a,m,source
+            """
+        else:
+            query = """
+            MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
+            WHERE m.status = "queue" AND  m.addedDatetime >= $fromDate AND m.addedDatetime <= $toDate AND m.senderUserId = $senderUserId
+            RETURN a,m,source
+            """
 
-        result = graph.run(query, dict(title = title, fromDate = fromDate, toDate = toDate))
-        result = result.data()
-        return result
-
-class MailList(Resource):
-    @authentication
-    def post(self, *args, **kwargs):
-        api_args = api_put_args.parse_args()
-        title = api_args["title"]
-
-        query = """
-        MATCH (a:Author)
-        WHERE  a.authorId = $title
-        RETURN a
-        """
-
-        result = graph.run(query, dict(title = title))
+        result = graph.run(query, dict(title = title, fromDate = fromDate, toDate = toDate, senderUserId = senderUserId))
         result = result.data()
         return result
 
@@ -145,6 +143,7 @@ class HistoryList(Resource):
     def post(self, *args, **kwargs):
         api_args = api_put_args.parse_args()
         title = api_args["title"]
+        senderUserId    = api_args["senderUserId"]
         
         today   = date.today()
         d1      = today.strftime("%Y-%m-%d")
@@ -158,13 +157,19 @@ class HistoryList(Resource):
         fromDate    = time.mktime(ts1.timetuple())
         toDate      = time.mktime(ts2.timetuple()) 
 
-        query = """
-        MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
-        WHERE m.status = "sent" AND  m.mailedDatetime >= $fromDate AND m.mailedDatetime <= $toDate 
-        RETURN a,m,source
-        """
-
-        result = graph.run(query, dict(title = title, fromDate = fromDate, toDate = toDate))
+        if senderUserId == 'admin':
+            query = """
+            MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
+            WHERE m.status = "sent" AND  m.mailedDatetime >= $fromDate AND m.mailedDatetime <= $toDate 
+            RETURN a,m,source
+            """
+        else:
+            query = """
+            MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
+            WHERE m.status = "sent" AND  m.mailedDatetime >= $fromDate AND m.mailedDatetime <= $toDate AND m.senderUserId = $senderUserId
+            RETURN a,m,source
+            """
+        result = graph.run(query, dict(title = title, fromDate = fromDate, toDate = toDate, senderUserId = senderUserId))
         result = result.data()
         return result
 
@@ -175,15 +180,19 @@ class UpdateSentStatus(Resource):
         title           = api_args["title"]
         receiverId      = api_args["receiverId"]
         articleId       = api_args["articleId"]
+        sentType        = api_args["sentType"]
+        status          = api_args["status"]
+
         curTime         = time.time()
 
         query = """
         MATCH (source:Article {eid: $articleId})-[m:MAIL_TO]->(a:Author {authorId: $receiverId})
-        SET m.status = "sent", 
-        m.mailedDatetime = $curTime
+        SET m.status = $status, 
+        m.mailedDatetime = $curTime, 
+        m.sentType = $sentType
         RETURN m
         """
 
-        result = graph.run(query, dict(title = title, receiverId = receiverId, articleId = articleId, curTime = curTime))
+        result = graph.run(query, dict(status = status,title = title, receiverId = receiverId, articleId = articleId, curTime = curTime, sentType = sentType))
         result = result.data()
         return result
