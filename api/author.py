@@ -9,6 +9,8 @@ api_put_args = reqparse.RequestParser()
 
 api_put_args.add_argument("api-key", type=str, help="api-key is required.", required=True)
 api_put_args.add_argument("title", type=str, help="title is required.", required=True)
+api_put_args.add_argument("firstname", type=str, help="firstname is required.", required=False)
+api_put_args.add_argument("lastname", type=str, help="lastname is required.", required=False)
 
 #get from env (wsgi ini)
 api_key     = os.environ.get('API_KEY', '')
@@ -48,37 +50,49 @@ class AuthorListApi(Resource):
         api_args = api_put_args.parse_args()
         title = api_args["title"]
 
-        titleNoSpace = title.replace(" ", "")
-        titleNoDash = title.replace("-", "")
-        titleDashToSpace = title.replace("-", " ")
+        firstname = api_args["firstname"]
+        lastname = api_args["lastname"]
 
-        titleSplitArray = title.split(" ")
-        titleSplit = titleSplitArray[0]
-        titleSplit = titleSplit.replace("-", "")
-        titleSplitDashToSpace = titleSplit.replace("-", " ")
+        firstnameNoSpace = firstname.replace(" ", "")
+        firstnameNoDash = firstname.replace("-", "")
+        firstnameDashToSpace = firstname.replace("-", " ")
 
-        # if len(titleSplitArray) > 1:
-        #     titleSplit2 = titleSplitArray[1]
-        #     titleSplit2 = titleSplit2.replace("-", "")
-        #     titleSplitDashToSpace2 = titleSplit2.replace("-", " ")
-        # else :
-        #     titleSplit2 = titleSplit
-        #     titleSplitDashToSpace2 = titleSplitDashToSpace
+        lastnameNoSpace = lastname.replace(" ", "")
+        lastnameNoDash = lastname.replace("-", "")
+        lastnameDashToSpace = lastname.replace("-", " ")
 
-        query = """
-        MATCH (a:Author)
-        WHERE  (toLower(a.`preferredName_last`) CONTAINS  toLower($title) OR  toLower(a.`preferredName_first`) =  toLower($title))
-        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleNoSpace) OR  toLower(a.`preferredName_first`) =  toLower($titleNoSpace))
-        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleNoDash) OR  toLower(a.`preferredName_first`) =  toLower($titleNoDash))
-        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleSplit) OR  toLower(a.`preferredName_first`) =  toLower($titleSplit))
-        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleDashToSpace) OR  toLower(a.`preferredName_first`) =  toLower($titleDashToSpace))
-        OR (toLower(a.`preferredName_last`) CONTAINS  toLower($titleSplitDashToSpace) OR  toLower(a.`preferredName_first`) =  toLower($titleSplitDashToSpace))
+        if firstname == '':
+            query = """
+            MATCH (a:Author)
+            WHERE  (toLower(a.`preferredName_last`) CONTAINS  toLower($lastname) )
+            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoSpace) )
+            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoDash) )
+            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameDashToSpace) )
         
-        RETURN a
-        """
+            RETURN a
+            """
+        elif lastname == '':
+            query = """
+            MATCH (a:Author)
+            WHERE  ( toLower(a.`preferredName_first`) =  toLower($firstname))
+            OR ( toLower(a.`preferredName_first`) =  toLower($firstnameNoSpace))
+            OR ( toLower(a.`preferredName_first`) =  toLower($firstnameNoDash))
+            OR ( toLower(a.`preferredName_first`) =  toLower($firstnameDashToSpace))
+        
+            RETURN a
+            """
+        else:
+            query = """
+            MATCH (a:Author)
+            WHERE  (toLower(a.`preferredName_last`) CONTAINS  toLower($lastname) OR  toLower(a.`preferredName_first`) =  toLower($firstname))
+            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoSpace) OR  toLower(a.`preferredName_first`) =  toLower($firstnameNoSpace))
+            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoDash) OR  toLower(a.`preferredName_first`) =  toLower($firstnameNoDash))
+            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameDashToSpace) OR  toLower(a.`preferredName_first`) =  toLower($firstnameDashToSpace))
+        
+            RETURN a
+            """
 
-        result = graph.run(query, dict(title = title, titleNoSpace = titleNoSpace, titleNoDash = titleNoDash,titleDashToSpace = titleDashToSpace, titleSplit = titleSplit, titleSplitDashToSpace = titleSplitDashToSpace))
-        # result = graph.run(query, dict(title = title, titleNoSpace = titleNoSpace, titleNoDash = titleNoDash,titleDashToSpace = titleDashToSpace, titleSplit = titleSplit, titleSplitDashToSpace = titleSplitDashToSpace , titleSplit2 = titleSplit2, titleSplitDashToSpace2 = titleSplitDashToSpace2))
+        result = graph.run(query, dict(firstname = firstname, firstnameNoSpace = firstnameNoSpace, firstnameNoDash = firstnameNoDash,firstnameDashToSpace = firstnameDashToSpace, lastname = lastname, lastnameNoSpace = lastnameNoSpace, lastnameNoDash = lastnameNoDash, lastnameDashToSpace = lastnameDashToSpace))
         result = result.data()
         return result
 
