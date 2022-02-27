@@ -108,13 +108,13 @@ class QueueList(Resource):
             query = """
             MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
             WHERE m.status = "queue" AND  m.addedDatetime >= $fromDate AND m.addedDatetime <= $toDate
-            RETURN a,m,source
+            RETURN a{.preferredName_full, .authorId, .emailAddress},m,source{.title, .eid}
             """
         else:
             query = """
             MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
             WHERE m.status = "queue" AND  m.addedDatetime >= $fromDate AND m.addedDatetime <= $toDate AND m.senderUserId = $senderUserId
-            RETURN a,m,source
+            RETURN a{.preferredName_full, .authorId, .emailAddress},m,source{.title, .eid}
             """
 
         result = graph.run(query, dict(title = title, fromDate = fromDate, toDate = toDate, senderUserId = senderUserId))
@@ -161,13 +161,13 @@ class HistoryList(Resource):
             query = """
             MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
             WHERE m.status = "sent" AND  m.mailedDatetime >= $fromDate AND m.mailedDatetime <= $toDate 
-            RETURN a,m,source
+            RETURN a{.preferredName_full, .authorId, .emailAddress},m,source{.title, .eid}
             """
         else:
             query = """
             MATCH (source:Article)-[m:MAIL_TO]->(a:Author)
             WHERE m.status = "sent" AND  m.mailedDatetime >= $fromDate AND m.mailedDatetime <= $toDate AND m.senderUserId = $senderUserId
-            RETURN a,m,source
+            RETURN a{.preferredName_full, .authorId, .emailAddress},m,source{.title, .eid}
             """
         result = graph.run(query, dict(title = title, fromDate = fromDate, toDate = toDate, senderUserId = senderUserId))
         result = result.data()

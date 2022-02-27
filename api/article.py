@@ -9,6 +9,7 @@ api_put_args = reqparse.RequestParser()
 
 api_put_args.add_argument("api-key", type=str, help="api-key is required.", required=True)
 api_put_args.add_argument("title", type=str, help="title is required.", required=True)
+api_put_args.add_argument("articleId", type=str, help="title is required.", required=False)
 
 #get from env (wsgi ini)
 api_key     = os.environ.get('API_KEY', '')
@@ -52,47 +53,34 @@ class ArticleApi(Resource):
         MATCH (source:Article)
         <-[:WRITE]-(a:Author)
         WHERE toLower(source.title) CONTAINS toLower($title)
-        WITH source, collect(a) as author
+        WITH source, collect(a.preferredName_full) as author
         OPTIONAL MATCH(source)-[:CONTAIN]->(k:Keyword)
-        RETURN author, source, collect(k.keyword) as keywords LIMIT 300
+        RETURN author, source {.title, .eid, .aggregationType, .doi, .abstract}, collect(k.keyword) as keywords LIMIT 300
         """
 
         result = graph.run(query, dict(title = title))
         result = result.data()
         return result
 
-class ArticleByAuthorApi(Resource):
+class ArticleByIdApi(Resource):
     @authentication
     def post(self, *args, **kwargs):
         api_args = api_put_args.parse_args()
         title = api_args["title"]
+        articleId = api_args["articleId"]
 
         query = """
-        MATCH (source:Article )
+        MATCH (source:Article)
         <-[:WRITE]-(a:Author)
-        WHERE  toLower(a.`preferredName_last`) =  toLower($title) OR  toLower(a.`preferredName_first`) =  toLower($title)
-        WITH source
-        MATCH (source)<-[:WRITE]-(authors:Author)
-        RETURN source, collect(authors) as authors LIMIT 300
+        WHERE source.eid = $articleId
+        WITH source, collect(a.preferredName_full) as author
+        OPTIONAL MATCH(source)-[:CONTAIN]->(k:Keyword)
+        RETURN author, 
+        source,       
+        collect(k.keyword) as keywords LIMIT 300
         """
 
-        result = graph.run(query, dict(title = title))
-        result = result.data()
-        return result
-
-class ArticleAuthorApi(Resource):
-    @authentication
-    def post(self, *args, **kwargs):
-        api_args = api_put_args.parse_args()
-        title = api_args["title"]
-
-        query = """
-        MATCH (source:Article {title: $title})
-        <-[:WRITE]-(a:Author)
-        RETURN a
-        """
-
-        result = graph.run(query, dict(title = title))
+        result = graph.run(query, dict(title = title, articleId = articleId))
         result = result.data()
         return result
 
@@ -108,7 +96,7 @@ class ArticleByAuthorIdApi(Resource):
         WHERE a.authorId = $title
         WITH source
         MATCH (source)<-[:WRITE]-(authors:Author)
-        RETURN source, collect(authors) as authors
+        RETURN source {.title, .eid, .aggregationType, .doi}, collect(authors.preferredName_full) as authors
         """
 
         result = graph.run(query, dict(title = title))
@@ -125,9 +113,10 @@ class ArticleListApi(Resource):
         MATCH (source:Article)
         <-[:WRITE]-(a:Author)
         WHERE toLower(source.title) CONTAINS toLower($title)
-        WITH source, collect(a) as authors
+        WITH source, collect(a.preferredName_full) as authors
         OPTIONAL MATCH(source)-[:CONTAIN]->(k:Keyword)
-        RETURN authors, source, collect(k.keyword) as keywords LIMIT 300
+        RETURN authors, source {.title, .eid, .aggregationType, .doi},
+        collect(k.keyword) as keywords LIMIT 300
         """
 
         result = graph.run(query, dict(title = title))

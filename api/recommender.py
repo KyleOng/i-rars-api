@@ -49,7 +49,7 @@ class CollaborativeFilteringAPI(Resource):
         title = api_args["title"]
 
         query = """
-        MATCH (source:Article {title: $title})
+        MATCH (source:Article {eid: $title})
         <-[:CITE]-(source_cite_bys:Article)
         -[:CITE]->(target:Article)
         <-[:CITE]-(target_cite_bys:Article)
@@ -59,7 +59,7 @@ class CollaborativeFilteringAPI(Resource):
         AND NOT (a)-[:WRITE]->(source) 
         WITH a, source, count(a) as frequency
         OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
-        RETURN a, m, frequency
+        RETURN a {.preferredName_full, .emailAddress, .latestAffiliatedInstitution_name, .authorId}, m, frequency
         ORDER BY frequency DESC LIMIT 300
         """
 
@@ -74,7 +74,7 @@ class ContentBasedFilteringAPI(Resource):
         title = api_args["title"]
 
         query = """
-        MATCH (source:Article {title: $title})
+        MATCH (source:Article {eid: $title})
         -[:CONTAIN]->(:Keyword)
         <-[:CONTAIN]-(target:Article)
         <-[:WRITE]-(a:Author)
@@ -82,7 +82,7 @@ class ContentBasedFilteringAPI(Resource):
         AND NOT (a)-[:WRITE]->(source)
         WITH a, source, count(a) as frequency
         OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
-        RETURN a, m, frequency
+        RETURN a {.preferredName_full, .emailAddress, .latestAffiliatedInstitution_name, .authorId}, m, frequency
         ORDER BY frequency DESC LIMIT 300
         """
 

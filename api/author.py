@@ -69,7 +69,7 @@ class AuthorListApi(Resource):
             OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoDash) )
             OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameDashToSpace) )
         
-            RETURN a
+            RETURN a {.authorId, .preferredName_full, .latestAffiliatedInstitution_name, .latestAffiliatedInstitution_address_city , .latestAffiliatedInstitution_address_country, .documentCount, .citationsCount, .preferredName_first, .preferredName_last}
             """
         elif lastname == '':
             query = """
@@ -79,17 +79,17 @@ class AuthorListApi(Resource):
             OR ( toLower(a.`preferredName_first`) =  toLower($firstnameNoDash))
             OR ( toLower(a.`preferredName_first`) =  toLower($firstnameDashToSpace))
         
-            RETURN a
+            RETURN a {.authorId, .preferredName_full, .latestAffiliatedInstitution_name, .latestAffiliatedInstitution_address_city , .latestAffiliatedInstitution_address_country, .documentCount, .citationsCount, .preferredName_first, .preferredName_last}
             """
         else:
             query = """
             MATCH (a:Author)
-            WHERE  (toLower(a.`preferredName_last`) CONTAINS  toLower($lastname) OR  toLower(a.`preferredName_first`) =  toLower($firstname))
-            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoSpace) OR  toLower(a.`preferredName_first`) =  toLower($firstnameNoSpace))
-            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoDash) OR  toLower(a.`preferredName_first`) =  toLower($firstnameNoDash))
-            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameDashToSpace) OR  toLower(a.`preferredName_first`) =  toLower($firstnameDashToSpace))
+            WHERE  (toLower(a.`preferredName_last`) CONTAINS  toLower($lastname) AND  toLower(a.`preferredName_first`) =  toLower($firstname))
+            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoSpace) AND  toLower(a.`preferredName_first`) =  toLower($firstnameNoSpace))
+            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoDash) AND  toLower(a.`preferredName_first`) =  toLower($firstnameNoDash))
+            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameDashToSpace) AND  toLower(a.`preferredName_first`) =  toLower($firstnameDashToSpace))
         
-            RETURN a
+            RETURN a {.authorId, .preferredName_full, .latestAffiliatedInstitution_name, .latestAffiliatedInstitution_address_city , .latestAffiliatedInstitution_address_country, .documentCount, .citationsCount, .preferredName_first, .preferredName_last}
             """
 
         result = graph.run(query, dict(firstname = firstname, firstnameNoSpace = firstnameNoSpace, firstnameNoDash = firstnameNoDash,firstnameDashToSpace = firstnameDashToSpace, lastname = lastname, lastnameNoSpace = lastnameNoSpace, lastnameNoDash = lastnameNoDash, lastnameDashToSpace = lastnameDashToSpace))
