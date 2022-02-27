@@ -61,7 +61,9 @@ class AuthorListApi(Resource):
         lastnameNoDash = lastname.replace("-", "")
         lastnameDashToSpace = lastname.replace("-", " ")
 
-        if firstname == '':
+        if firstname == '' and lastname == '':
+            return False, 400
+        elif firstname == '':
             query = """
             MATCH (a:Author)
             WHERE  (toLower(a.`preferredName_last`) CONTAINS  toLower($lastname) )
