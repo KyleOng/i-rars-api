@@ -111,8 +111,11 @@ class ArticleListApi(Resource):
 
         query = """
         MATCH (source:Article)
-        <-[:WRITE]-(a:Author)
+        <-[:WRITE]-(ammu:Author)
         WHERE toLower(source.title) CONTAINS toLower($title)
+        AND ammu.latestAffiliatedInstitution_name = "Multimedia University"
+        WITH source
+        MATCH (source)<-[:WRITE]-(a:Author)
         WITH source, collect(a.preferredName_full) as authors
         OPTIONAL MATCH(source)-[:CONTAIN]->(k:Keyword)
         RETURN authors, source {.title, .eid, .aggregationType, .doi},

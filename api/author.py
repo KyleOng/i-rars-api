@@ -69,30 +69,39 @@ class AuthorListApi(Resource):
         elif firstname == '':
             query = """
             MATCH (a:Author)
-            WHERE  (toLower(a.`preferredName_last`) CONTAINS  toLower($lastname) )
-            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoSpace) )
-            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoDash) )
-            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameDashToSpace) )
+            WHERE (
+                 (toLower(a.`preferredName_last`) CONTAINS  toLower($lastname) )
+                OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoSpace) )
+                OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoDash) )
+                OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameDashToSpace) )
+            )
+            AND a.latestAffiliatedInstitution_name = "Multimedia University"
         
             RETURN a {.authorId, .preferredName_full, .latestAffiliatedInstitution_name, .latestAffiliatedInstitution_address_city , .latestAffiliatedInstitution_address_country, .documentCount, .citationsCount, .preferredName_first, .preferredName_last}
             """
         elif lastname == '':
             query = """
             MATCH (a:Author)
-            WHERE  ( toLower(a.`preferredName_first`) =  toLower($firstname))
-            OR ( toLower(a.`preferredName_first`) =  toLower($firstnameNoSpace))
-            OR ( toLower(a.`preferredName_first`) =  toLower($firstnameNoDash))
-            OR ( toLower(a.`preferredName_first`) =  toLower($firstnameDashToSpace))
+            WHERE  ( 
+                ( toLower(a.`preferredName_first`) =  toLower($firstname))
+                OR ( toLower(a.`preferredName_first`) =  toLower($firstnameNoSpace))
+                OR ( toLower(a.`preferredName_first`) =  toLower($firstnameNoDash))
+                OR ( toLower(a.`preferredName_first`) =  toLower($firstnameDashToSpace))
+                )
+            AND a.latestAffiliatedInstitution_name = "Multimedia University"
         
             RETURN a {.authorId, .preferredName_full, .latestAffiliatedInstitution_name, .latestAffiliatedInstitution_address_city , .latestAffiliatedInstitution_address_country, .documentCount, .citationsCount, .preferredName_first, .preferredName_last}
             """
         else:
             query = """
             MATCH (a:Author)
-            WHERE  (toLower(a.`preferredName_last`) CONTAINS  toLower($lastname) AND  toLower(a.`preferredName_first`) =  toLower($firstname))
-            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoSpace) AND  toLower(a.`preferredName_first`) =  toLower($firstnameNoSpace))
-            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoDash) AND  toLower(a.`preferredName_first`) =  toLower($firstnameNoDash))
-            OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameDashToSpace) AND  toLower(a.`preferredName_first`) =  toLower($firstnameDashToSpace))
+            WHERE  (
+                (toLower(a.`preferredName_last`) CONTAINS  toLower($lastname) AND  toLower(a.`preferredName_first`) =  toLower($firstname))
+                OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoSpace) AND  toLower(a.`preferredName_first`) =  toLower($firstnameNoSpace))
+                OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameNoDash) AND  toLower(a.`preferredName_first`) =  toLower($firstnameNoDash))
+                OR (toLower(a.`preferredName_last`) CONTAINS  toLower($lastnameDashToSpace) AND  toLower(a.`preferredName_first`) =  toLower($firstnameDashToSpace))
+                )
+             AND a.latestAffiliatedInstitution_name = "Multimedia University"
         
             RETURN a {.authorId, .preferredName_full, .latestAffiliatedInstitution_name, .latestAffiliatedInstitution_address_city , .latestAffiliatedInstitution_address_country, .documentCount, .citationsCount, .preferredName_first, .preferredName_last}
             """
