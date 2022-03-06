@@ -2,6 +2,8 @@ import functools
 import json
 import os
 
+import time
+
 from flask_restful import Resource, reqparse, abort
 from py2neo import Graph
 
@@ -11,6 +13,7 @@ api_put_args.add_argument("api-key", type=str, help="api-key is required.", requ
 api_put_args.add_argument("title", type=str, help="title is required.", required=True)
 api_put_args.add_argument("firstname", type=str, help="firstname is required.", required=False)
 api_put_args.add_argument("lastname", type=str, help="lastname is required.", required=False)
+api_put_args.add_argument("reason", type=str, help="reason is required.", required=False)
 
 #get from env (wsgi ini)
 api_key     = os.environ.get('API_KEY', '')
@@ -114,4 +117,58 @@ class AuthorDetailsApi(Resource):
         result = result.data()
         return result
 
+class AuthorUnsubscribeApi(Resource):
+    @authentication
+    def post(self, *args, **kwargs):
+        api_args = api_put_args.parse_args()
+        title = api_args["title"]
+        curTime         = time.time()
 
+        query = """
+        MATCH (a:Author)
+        WHERE  a.authorId = $title
+        SET a.mailSubscribeStatus = "unsubscribe",
+        a.mailUnsubscribeDatetime = $curTime
+        RETURN a
+        """
+
+        result = graph.run(query, dict(title = title ,curTime = curTime))
+        result = result.data()
+        return result
+
+class AuthorUnsubscribeReasonApi(Resource):
+    @authentication
+    def post(self, *args, **kwargs):
+        api_args = api_put_args.parse_args()
+        title = api_args["title"]
+        reason = api_args["reason"]
+
+        query = """
+        MATCH (a:Author)
+        WHERE  a.authorId = $title
+        SET a.mailUnsubscribeReason = $reason
+        RETURN a
+        """
+
+        result = graph.run(query, dict(title = title ,reason = reason))
+        result = result.data()
+        return result
+
+class AuthorUnsubscribeListApi(Resource):
+    @authentication
+    def post(self, *args, **kwargs):
+        api_args = api_put_args.parse_args()
+        title = api_args["title"]
+
+
+       
+        query = """
+        MATCH (a:Author)
+        WHERE  a.mailSubscribeStatus = "unsubscribe"
+        RETURN a {.authorId, .mailUnsubscribeReason, .mailUnsubscribeDatetime, .preferredName_full, .latestAffiliatedInstitution_name, .latestAffiliatedInstitution_address_city , .latestAffiliatedInstitution_address_country, .emailAddress, .citationsCount, .preferredName_first, .preferredName_last}
+        ORDER BY a.mailUnsubscribeDatetime DESC LIMIT 500
+        """
+
+        result = graph.run(query, dict(title=title))
+        result = result.data()
+        return result

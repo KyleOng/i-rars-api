@@ -56,6 +56,7 @@ class CollaborativeFilteringAPI(Resource):
         <-[:WRITE]-(a:Author)
         WHERE source <> target
         AND source_cite_bys <> target_cite_bys 
+        AND ( a.mailSubscribeStatus = "subscribe" OR a.mailSubscribeStatus IS NULL)
         AND NOT (a)-[:WRITE]->(source) 
         WITH a, source, count(a) as frequency
         OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
@@ -80,6 +81,7 @@ class ContentBasedFilteringAPI(Resource):
         <-[:WRITE]-(a:Author)
         WHERE source <> target
         AND NOT (a)-[:WRITE]->(source)
+        AND ( a.mailSubscribeStatus = "subscribe" OR a.mailSubscribeStatus IS NULL)
         WITH a, source, count(a) as frequency
         OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
         RETURN a {.preferredName_full, .emailAddress, .latestAffiliatedInstitution_name, .authorId}, m, frequency
