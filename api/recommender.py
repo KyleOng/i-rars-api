@@ -59,7 +59,8 @@ class CollaborativeFilteringAPI(Resource):
         AND ( a.mailSubscribeStatus = "subscribe" OR a.mailSubscribeStatus IS NULL)
         AND NOT (a)-[:WRITE]->(source) 
         WITH a, source, count(a) as frequency
-        OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
+        OPTIONAL MATCH (source)<-[:INCLUDE]-(m:Mail)-[:MAIL_TO]->(a)
+        WHERE m.status <> "canceled"
         RETURN a {.preferredName_full, .emailAddress, .latestAffiliatedInstitution_name, .authorId}, m, frequency
         ORDER BY frequency DESC LIMIT 300
         """
@@ -83,7 +84,8 @@ class ContentBasedFilteringAPI(Resource):
         AND NOT (a)-[:WRITE]->(source)
         AND ( a.mailSubscribeStatus = "subscribe" OR a.mailSubscribeStatus IS NULL)
         WITH a, source, count(a) as frequency
-        OPTIONAL MATCH (source)-[m:MAIL_TO]-(a)
+        MATCH (source)<-[:INCLUDE]-(m:Mail)-[:MAIL_TO]->(a)
+        WHERE m.status <> "canceled"
         RETURN a {.preferredName_full, .emailAddress, .latestAffiliatedInstitution_name, .authorId}, m, frequency
         ORDER BY frequency DESC LIMIT 300
         """
